@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const User = require("../Models/UserModel");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const emailService = require('../Config/emailConfig');
+
 
 var emailRegex =
   /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
@@ -267,8 +269,7 @@ authRouter.put("/updateUser", async (req, res) => {
           email,
           phoneNumber,
         });
-        res.json({ message: 'User details updated successfully' });
-
+        res.json({ message: "User details updated successfully" });
       } else {
         console.log("updatedUser");
 
@@ -278,50 +279,109 @@ authRouter.put("/updateUser", async (req, res) => {
   } catch (error) {}
 });
 
-authRouter.put("/changePassword", async (req, res)=>{
+authRouter.put("/changePassword", async (req, res) => {
   try {
     const { access_token } = req.cookies;
     const userID = jwt.decode(access_token);
-    const {password, newPassword, confirmPassword}= req.body
+    const { password, newPassword, confirmPassword } = req.body;
 
     const ifUserExist = await User.findById(userID.user);
     const passwordCorrect = await bcrypt.compare(
-        password,
-        ifUserExist.harshedPassword
-      );
+      password,
+      ifUserExist.harshedPassword
+    );
 
-      if (!newPassword || !password || !newPassword)
-      return res
-        .status(400)
-        .json({ errorMessage: "All fields are required" });
+    if (!newPassword || !password || !newPassword)
+      return res.status(400).json({ errorMessage: "All fields are required" });
 
     if (passwordCorrect) {
-        
-        if(newPassword !== confirmPassword) return res
-        .status(400)
-        .json({ errorMessage: "Password does not match" });
-        //Harsh new Password
+      if (newPassword !== confirmPassword)
+        return res
+          .status(400)
+          .json({ errorMessage: "Password does not match" });
+      //Harsh new Password
 
-        const salt = await bcrypt.genSalt();
+      const salt = await bcrypt.genSalt();
       const harshedPassword = await bcrypt.hash(newPassword, salt);
 
       ifUserExist.harshedPassword = harshedPassword;
-      await ifUserExist.save()
-       
+      await ifUserExist.save();
 
-      res.json({ message: 'Password changed successfully' });
-        //Returning User Data
-       
-      } else {
-        return res
-          .status(400)
-          .json({ errorMessage: "Password incorrect" });
-      }
+      res.json({ message: "Password changed successfully" });
+      //Returning User Data
+    } else {
+      return res.status(400).json({ errorMessage: "Password incorrect" });
+    }
   } catch (error) {
-    
+    console.log(error);
+    if (error.name === "ValidationError") {
+      const errorMessages = {};
+
+      // Iterate through the validation errors and store custom error messages
+      for (let key in error.errors) {
+        errorMessages[key] = error.errors[key].message;
+      }
+
+      res.status(400).json({ errors: errorMessages });
+    } else {
+      res.status(500).json({ message: "An error occurred" });
+    }
   }
+});
+
+authRouter.put(
+  "/updateProfileImage",
+  upload.single("profileImage"),
+  async (req, res) => {
+    const profileImage = req.file;
+    const { access_token } = req.cookies;
+
+    try {
+      const userID = jwt.decode(access_token);
+      if (!profileImage)
+        return res.status(400).json({ errorMessage: "Image is required" });
+
+      const ifUserExist = await User.findById(userID.user);
+
+      ifUserExist.profilePic = profileImage.path;
+
+      await ifUserExist.save();
+
+      res.json({ message: "Profile picture changed successfully" });
+    } catch (error) {
+      console.log(error);
+      if (error.name === "ValidationError") {
+        const errorMessages = {};
+
+        // Iterate through the validation errors and store custom error messages
+        for (let key in error.errors) {
+          errorMessages[key] = error.errors[key].message;
+        }
+
+        res.status(400).json({ errors: errorMessages });
+      } else {
+        res.status(500).json({ message: "An error occurred" });
+      }
+    }
+  }
+);
+
+authRouter.post("/verifyEmail", async (req, res)=>{
+const {email}= req.body
+    try {
+        
+        console.log(email)
+        const verificationToken = generateVerificationToken();
+
+
+        await emailService.sendVerificationEmail(email, verificationToken);
+
+
+  
+    } catch (error) {
+        
+    }
+
 })
-
-
 
 module.exports = authRouter;

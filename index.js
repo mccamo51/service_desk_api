@@ -31,7 +31,7 @@ mongoose.connect(process.env.MDB_CONNECT)
 
 
 
-// app.use("/auth", require("./Routers/authRouter"))
+app.use("/category", require("./Routers/categoryRouter"))
 
 app.use("/auth", require("./Routers/authRouter"))
 
