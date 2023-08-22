@@ -41,7 +41,6 @@ categoryRouter.put("/updateCategory", async (req, res)=>{
     if(!title)  return res.status(400).json({error:"Title is required"})
     if(!id)  return res.status(400).json({error:"Category id is required"})
 
-        // console.log(ifCategoryExist)
     if(!ifCategoryExist)  return res.status(400).json({error:"Category does not exist"})
 
    
