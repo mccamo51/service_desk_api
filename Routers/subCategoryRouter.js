@@ -102,4 +102,20 @@ subCategoryRouter.delete("/deleteSubCategory/:id", async (req, res)=>{
     }
 })
 
+subCategoryRouter.get("/getSubCatById", async (req, res)=>{
+    const {subCatId} = req.query;
+    let subCategoryData;
+    try {
+        if(subCatId === undefined){
+            
+             subCategoryData =await SubCategory.find().populate()
+        }else{
+             subCategoryData =await SubCategory.find({name:subCatId}).populate()
+
+        }
+       console.log(subCategoryData,subCatId )
+    } catch (error) {
+        
+    }
+})
 module.exports = subCategoryRouter;
